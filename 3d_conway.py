@@ -26,7 +26,7 @@ class GameOfLife3D(ShowBase):
         self.size = 20  # most important variable for comp time, sets the ultimate 3D grid size
         self.grid = [[[0 for _ in range(self.size)] for _ in range(self.size)] for _ in range(self.size)]
         self.new_grid = []
-        self.grid_step_time = 1
+        self.grid_step_time = 0.01
         
         self.init_grid()
         # self.init_grid_deterministic()
