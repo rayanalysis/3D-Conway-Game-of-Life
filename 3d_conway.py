@@ -7,12 +7,13 @@ from direct.task import Task
 from direct.filter.CommonFilters import CommonFilters
 from direct.stdpy import threading2
 import math
+import random
 
 
 class GameOfLife3D(ShowBase):
     def __init__(self):
         load_prc_file_data("", """
-            win-size 1920 1080
+            win-size 1600 1200
             window-title 3D Conway
             show-frame-rate-meter #t
             framebuffer-srgb #t
@@ -23,12 +24,13 @@ class GameOfLife3D(ShowBase):
         """)
         
         super().__init__()
-        self.size = 25  # most important variable for comp time, sets the ultimate 3D grid size
+        self.size = 20  # most important variable for comp time, sets the ultimate 3D grid size
         self.grid = [[[0 for _ in range(self.size)] for _ in range(self.size)] for _ in range(self.size)]
         self.new_grid = []
         self.grid_step_time = 1
         
         self.init_grid()
+        # self.init_grid_deterministic()
         self.create_geometry()
         threading2._start_new_thread(self.compute_next_grid, ())
 
@@ -49,12 +51,21 @@ class GameOfLife3D(ShowBase):
         scene_filters.set_blur_sharpen(0.7)
         
     def init_grid(self):
+        # have a probablistic starting grid, may produce more interesting results
+        probability_alive = 0.3  # adjust this value between 0 and 1 to change the probability of a cell being alive
+
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    self.grid[x][y][z] = 1 if random.random() < probability_alive else 0
+
+    def init_grid_deterministic(self):
+        # add an "initial state" to the grid to prevent nondeterministic starts
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
                     self.grid[x][y][z] = 0
 
-        # add an "initial state" to the grid to prevent nondeterministic starts
         self.grid[self.size//2][self.size//2][self.size//2] = 1
         self.grid[self.size//2 + 1][self.size//2][self.size//2] = 1
         self.grid[self.size//2 - 1][self.size//2][self.size//2] = 1
