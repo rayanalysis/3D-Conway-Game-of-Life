@@ -1,7 +1,7 @@
 import sys
 import time
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import load_prc_file_data, Point3, PointLight, Vec4, Vec3, Shader, Texture, LColor, ComputeNode, ShaderAttrib, PfmFile
+from panda3d.core import load_prc_file_data, NodePath, Point3, PointLight, Vec4, Vec3, Shader, Texture, LColor, ComputeNode, ShaderAttrib, PfmFile
 from direct.task import Task
 from direct.filter.CommonFilters import CommonFilters
 # from direct.stdpy import threading2
@@ -86,20 +86,35 @@ class GameOfLife3D(ShowBase):
                        for _ in range(self.size)]
                       for _ in range(self.size)]
                      for _ in range(self.size)]
-        print(self.grid)
 
-    def create_geometry(self):
+    def init_grid_deterministic(self):
+        # add an "initial state" to the grid to prevent nondeterministic starts
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
-                    cube = self.loader.load_model("1m_cube.gltf")
-                    cube.flatten_strong()
-                    cube.set_scale(0.49)
-                    cube.set_pos(Point3(x, y, z))
-                    cube.set_name(f"Cube-{x}-{y}-{z}")
-                    cube.reparent_to(self.render)
-                    if not self.grid[x][y][z]:
-                        cube.hide()
+                    self.grid[x][y][z] = 0
+
+        self.grid[self.size//2][self.size//2][self.size//2] = 1
+        self.grid[self.size//2 + 1][self.size//2][self.size//2] = 0
+        self.grid[self.size//2 - 1][self.size//2][self.size//2] = 1
+        self.grid[self.size//2][self.size//2 + 1][self.size//2] = 1
+        self.grid[self.size//2][self.size//2 - 1][self.size//2] = 1
+
+    def create_geometry(self):
+        self.cube_model = self.loader.load_model("1m_cube.gltf")
+        self.cube_model.set_scale(0.49)
+        self.cube_model.set_name("CubeModel")
+
+        self.instance_root = NodePath("InstanceRoot")
+        self.instance_root.reparent_to(self.render)
+
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    if self.grid[x][y][z]:
+                        instance = self.instance_root.attach_new_node("Instance")
+                        instance.set_pos(Point3(x, y, z))
+                        self.cube_model.instance_to(instance)
 
     def update(self, task):
         # update the input texture with the new grid values
@@ -128,17 +143,20 @@ class GameOfLife3D(ShowBase):
         output_array = output_array.reshape(self.size, self.size, self.size, 4)
 
         # update the geometry based on the new grid
+        self.instance_root.remove_node()
+        self.instance_root = NodePath("InstanceRoot")
+        self.instance_root.reparent_to(self.render)
+
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
-                    cube = self.render.find(f"Cube-{x}-{y}-{z}")
                     if output_array[x, y, z, 0] > 0.5:
-                        cube.show()
+                        instance = self.instance_root.attach_new_node("Instance")
+                        instance.set_pos(Point3(x, y, z))
+                        self.cube_model.instance_to(instance)
+                        self.grid[x][y][z] = 1
                     else:
-                        cube.hide()
-
-                    # Update self.grid
-                    self.grid[x][y][z] = 1 if output_array[x, y, z, 0] > 0.5 else 0
+                        self.grid[x][y][z] = 0
 
         task.delay_time = self.grid_step_time
         return task.again
