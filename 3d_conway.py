@@ -51,7 +51,7 @@ class GameOfLife3D(ShowBase):
         scene_filters.set_blur_sharpen(0.7)
         
     def init_grid(self):
-        # have a probablistic starting grid, may produce more interesting results
+        # have a probabilistic starting grid, may produce more interesting results
         probability_alive = 0.3  # adjust this value between 0 and 1 to change the probability of a cell being alive
 
         for x in range(self.size):
