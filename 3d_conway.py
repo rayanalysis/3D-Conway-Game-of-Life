@@ -13,7 +13,7 @@ import random
 class GameOfLife3D(ShowBase):
     def __init__(self):
         load_prc_file_data("", """
-            win-size 1600 1200
+            win-size 1600 900
             window-title 3D Conway
             show-frame-rate-meter #t
             framebuffer-srgb #t
@@ -24,7 +24,7 @@ class GameOfLife3D(ShowBase):
         """)
         
         super().__init__()
-        self.size = 20  # most important variable for comp time, sets the ultimate 3D grid size
+        self.size = 40  # most important variable for comp time, sets the ultimate 3D grid size
         self.grid = [[[0 for _ in range(self.size)] for _ in range(self.size)] for _ in range(self.size)]
         self.new_grid = []
         self.grid_step_time = 1
