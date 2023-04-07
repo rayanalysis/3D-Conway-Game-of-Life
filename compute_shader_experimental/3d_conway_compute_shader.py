@@ -1,7 +1,7 @@
 import sys
 import time
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import load_prc_file_data, Point3, PointLight, Vec4, Vec3, Shader, Texture, LColor, ComputeNode, ShaderAttrib
+from panda3d.core import load_prc_file_data, Point3, PointLight, Vec4, Vec3, Shader, Texture, LColor, ComputeNode, ShaderAttrib, PfmFile
 from direct.task import Task
 from direct.filter.CommonFilters import CommonFilters
 # from direct.stdpy import threading2
@@ -24,11 +24,13 @@ class GameOfLife3D(ShowBase):
         """)
 
         super().__init__()
-        self.size = 20  # most important variable for comp time, sets the ultimate 3D grid size
+        self.size = 10  # most important variable for comp time, sets the ultimate 3D grid size
         self.grid_step_time = 0.01
 
         self.init_grid()
         self.create_geometry()
+
+        self.check_tex = PfmFile()
 
         # create a 3D numpy array for the initial grid
         grid = np.array(self.grid, dtype=np.float32)
@@ -106,8 +108,13 @@ class GameOfLife3D(ShowBase):
         # extract texture data
         base.graphics_engine.extract_texture_data(self.output_texture, base.win.get_gsg())
 
+        # verify texture
+        self.output_texture.store(self.check_tex)
+        self.check_tex.write('checktex.png')
+
         # create a numpy array from the output texture data
-        output_data = memoryview(self.output_texture.get_ram_image()).cast("B").cast("f")
+        # print(self.output_texture)
+        output_data = memoryview(self.output_texture.get_ram_image_as('RGBA')).cast("B").cast("f")
         output_array = np.frombuffer(output_data, dtype=np.float32)
         output_array = output_array.reshape(self.size, self.size, self.size, 4)
 
