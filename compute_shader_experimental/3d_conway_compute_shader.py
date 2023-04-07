@@ -24,7 +24,7 @@ class GameOfLife3D(ShowBase):
         """)
 
         super().__init__()
-        self.size = 10  # most important variable for comp time, sets the ultimate 3D grid size
+        self.size = 20  # most important variable for comp time, sets the ultimate 3D grid size
         self.grid_step_time = 0.01
 
         self.init_grid()
@@ -86,6 +86,7 @@ class GameOfLife3D(ShowBase):
                        for _ in range(self.size)]
                       for _ in range(self.size)]
                      for _ in range(self.size)]
+        print(self.grid)
 
     def create_geometry(self):
         for x in range(self.size):
@@ -101,19 +102,27 @@ class GameOfLife3D(ShowBase):
                         cube.hide()
 
     def update(self, task):
+        # update the input texture with the new grid values
+        new_grid = np.array(self.grid, dtype=np.float32)
+        PTA_uchar = self.input_texture.modify_ram_image()
+        pta_np = np.frombuffer(PTA_uchar, dtype=np.float32)
+        np.copyto(pta_np, new_grid.ravel())
+
+        # set the updated input texture as the shader input
+        self.final_compute_shader.set_shader_input("inputTexture", self.input_texture)
+
         # run the compute shader to calculate the next grid
         compute_attrib = self.final_compute_shader.get_attrib(ShaderAttrib)
-        base.graphicsEngine.dispatch_compute((self.size,self.size,self.size), compute_attrib, base.win.get_gsg())
+        base.graphicsEngine.dispatch_compute((self.size, self.size, self.size), compute_attrib, base.win.get_gsg())
 
         # extract texture data
         base.graphics_engine.extract_texture_data(self.output_texture, base.win.get_gsg())
-
+        
         # verify texture
-        self.output_texture.store(self.check_tex)
-        self.check_tex.write('checktex.png')
+        # self.output_texture.store(self.check_tex)
+        # self.check_tex.write('checktex.png')
 
         # create a numpy array from the output texture data
-        # print(self.output_texture)
         output_data = memoryview(self.output_texture.get_ram_image_as('RGBA')).cast("B").cast("f")
         output_array = np.frombuffer(output_data, dtype=np.float32)
         output_array = output_array.reshape(self.size, self.size, self.size, 4)
@@ -127,6 +136,9 @@ class GameOfLife3D(ShowBase):
                         cube.show()
                     else:
                         cube.hide()
+
+                    # Update self.grid
+                    self.grid[x][y][z] = 1 if output_array[x, y, z, 0] > 0.5 else 0
 
         task.delay_time = self.grid_step_time
         return task.again
