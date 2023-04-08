@@ -16,7 +16,7 @@ int countNeighbors(ivec3 coord) {
 
                 ivec3 neighbor = ivec3(coord.x + dx, coord.y + dy, coord.z + dz);
 
-                // Clamp neighbor coordinates within grid boundaries
+                // clamp neighbor coordinates within grid boundaries
                 neighbor = clamp(neighbor, ivec3(0), ivec3(size - 1));
 
                 count += int(texelFetch(inputTexture, neighbor, 0).r > 0.5);

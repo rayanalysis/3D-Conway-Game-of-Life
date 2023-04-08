@@ -24,8 +24,9 @@ class GameOfLife3D(ShowBase):
         """)
 
         super().__init__()
-        self.size = 20  # most important variable for comp time, sets the ultimate 3D grid size
+        self.size = 50  # most important variable for comp time, sets the ultimate 3D grid size
         self.grid_step_time = 0.01
+        self.grid = [[[0 for _ in range(self.size)] for _ in range(self.size)] for _ in range(self.size)]
 
         self.init_grid()
         self.create_geometry()
@@ -79,13 +80,20 @@ class GameOfLife3D(ShowBase):
         scene_filters.set_blur_sharpen(0.7)
 
     def init_grid(self):
-        # have a probabilistic starting grid, may produce more interesting results
-        probability_alive = 0.3  # adjust this value between 0 and 1 to change the probability of a cell being alive
+        probability_alive = 0.02  # adjust this value between 0 and 1 to change the probability of a cell being alive
 
-        self.grid = [[[1 if random.random() < probability_alive else 0
-                       for _ in range(self.size)]
-                      for _ in range(self.size)]
-                     for _ in range(self.size)]
+        # initialize the grid with given probabilities
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    self.grid[x][y][z] = 1 if random.random() < probability_alive else 0
+
+        # set positions with less than two neighbors to zero
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    if self.grid[x][y][z] == 1 and self.count_neighbors(x, y, z) <= 1:
+                        self.grid[x][y][z] = 0
 
     def init_grid_deterministic(self):
         # add an "initial state" to the grid to prevent nondeterministic starts
@@ -160,6 +168,17 @@ class GameOfLife3D(ShowBase):
 
         task.delay_time = self.grid_step_time
         return task.again
+
+    def count_neighbors(self, x, y, z):
+        count = 0
+        for dx in range(-1, 2):
+            for dy in range(-1, 2):
+                for dz in range(-1, 2):
+                    if dx == 0 and dy == 0 and dz == 0:
+                        continue
+                    nx, ny, nz = (x + dx) % self.size, (y + dy) % self.size, (z + dz) % self.size
+                    count += self.grid[nx][ny][nz]
+        return count
 
     def circle_camera(self, task):
         radius = self.size * 3

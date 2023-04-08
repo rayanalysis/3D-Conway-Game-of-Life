@@ -49,14 +49,22 @@ class GameOfLife3D(ShowBase):
         scene_filters.set_gamma_adjust(1.1)
         scene_filters.set_blur_sharpen(0.7)
         
-    def init_grid(self):
-        # have a probabilistic starting grid, may produce more interesting results
-        probability_alive = 0.3  # adjust this value between 0 and 1 to change the probability of a cell being alive
 
+    def init_grid(self):
+        probability_alive = 0.05  # adjust this value between 0 and 1 to change the probability of a cell being alive
+
+        # initialize the grid with given probabilities
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
                     self.grid[x][y][z] = 1 if random.random() < probability_alive else 0
+
+        # set positions with less than two neighbors to zero
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    if self.grid[x][y][z] == 1 and self.count_neighbors(x, y, z) <= 1:
+                        self.grid[x][y][z] = 0
 
     def init_grid_deterministic(self):
         # add an "initial state" to the grid to prevent nondeterministic starts
