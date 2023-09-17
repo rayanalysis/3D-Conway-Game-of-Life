@@ -28,8 +28,10 @@ class GameOfLife3D(ShowBase):
         self.new_grid = []
         self.grid_step_time = 0.01
         
-        self.init_grid()
-        # self.init_grid_deterministic()
+        # self.init_grid()
+        self.init_grid_deterministic()
+        # RLE string converter version, needs a self.size of ~40 or more for 60P5H2V0 RLE string
+        # self.init_grid_RLE_basis()
         self.create_geometry()
         threading2._start_new_thread(self.compute_next_grid, ())
 
@@ -78,6 +80,50 @@ class GameOfLife3D(ShowBase):
         self.grid[self.size//2 - 1][self.size//2][self.size//2] = 1
         self.grid[self.size//2][self.size//2 + 1][self.size//2] = 1
         self.grid[self.size//2][self.size//2 - 1][self.size//2] = 1
+
+    def rle_to_bin_list(self, rle_string):
+        binary_list = []    
+        rle_string = rle_string.replace("\n","")
+        rows = rle_string.split('$')
+      
+        for row in rows:
+            binary_row = []
+            run_length = ''
+            for char in row:
+                if char.isdigit():
+                    run_length += char
+                else:
+                    if run_length == '':
+                        run_length = '1'
+                    if char == 'o':
+                        binary_row.extend([1]*int(run_length))
+                    else:
+                        binary_row.extend([0]*int(run_length))
+                    run_length = ''
+
+            binary_list.append(binary_row)
+
+        return binary_list
+
+    def init_grid_RLE_basis(self):
+        # Start with an all-zero grid
+        for x in range(self.size):
+            for y in range(self.size):
+                for z in range(self.size):
+                    self.grid[x][y][z] = 0
+
+        # 60P5H2V0 spaceship representation
+        rle_string = '''
+    4bo23bo$3bobo21bobo$3bobo21bobo$b3ob2o19b2ob3o$o31bo$b3ob2o19b2ob3o$3b
+ob2o19b2obo9$12bo7bo$10b2ob2o3b2ob2o$13b2o3b2o$15bobo$8bo4bobobobo4bo$
+7b3o5bobo5b3o$7bo5bobobobo5bo$9bo2bo2bobo2bo2bo$9b2o3b2ob2o3b2o$7bo7bo
+bo7bo$7bo6b2ob2o6bo!$'''
+        spaceship_60P5H2V0_coordinates = self.rle_to_bin_list(rle_string)
+
+        # Insert the spaceship at a specific point in the 2D slice of a 3D grid
+        for i, row in enumerate(spaceship_60P5H2V0_coordinates):
+            for j, cell in enumerate(row):
+                self.grid[i][j][self.size//2] = cell
     
     def create_geometry(self):
         for x in range(self.size):
