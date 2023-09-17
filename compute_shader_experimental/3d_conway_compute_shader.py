@@ -21,16 +21,17 @@ class GameOfLife3D(ShowBase):
             multisamples 4
             cursor-hidden #t
             fullscreen #f
-        """)
+        """)  # window-type offscreen
 
         super().__init__()
         self.size = 50  # most important variable for comp time, sets the ultimate 3D grid size
         self.grid_step_time = 0.01
         self.grid = [[[0 for _ in range(self.size)] for _ in range(self.size)] for _ in range(self.size)]
+        self.total_steps = 0
 
-        self.init_grid()
+        # self.init_grid()
         # RLE string converter version, needs a self.size of ~40 or more for 60P5H2V0 RLE string
-        # self.init_grid_RLE_basis()
+        self.init_grid_RLE_basis()
         self.create_geometry()
 
         self.check_tex = PfmFile()
@@ -38,7 +39,7 @@ class GameOfLife3D(ShowBase):
         # create a 3D numpy array for the initial grid
         grid = np.array(self.grid, dtype=np.float32)
 
-        # Create input and output textures
+        # create input and output textures
         self.input_texture = Texture("input")
         self.input_texture.setup_3d_texture(self.size, self.size, self.size, Texture.T_float, Texture.F_r32)
         self.input_texture.set_clear_color(LColor(0, 0, 0, 1))
@@ -66,6 +67,8 @@ class GameOfLife3D(ShowBase):
         self.final_compute_shader.set_shader_input("outputTexture", self.output_texture)
 
         self.task_mgr.add(self.update, "Update")
+        self.cam_circles = 0
+        self.max_cam_circles = 1  # sets the number of camera orbit-frames allowed
         self.task_mgr.add(self.circle_camera, "CircleCamera")
         self.accept("escape", sys.exit)
 
@@ -135,7 +138,7 @@ class GameOfLife3D(ShowBase):
         return binary_list
 
     def init_grid_RLE_basis(self):
-        # Start with an all-zero grid
+        # start with an all-zero grid
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
@@ -149,10 +152,16 @@ ob2o19b2obo9$12bo7bo$10b2ob2o3b2ob2o$13b2o3b2o$15bobo$8bo4bobobobo4bo$
 bo7bo$7bo6b2ob2o6bo!$'''
         spaceship_60P5H2V0_coordinates = self.rle_to_bin_list(rle_string)
 
-        # Insert the spaceship at a specific point in the 2D slice of a 3D grid
+        # calculate middle of the grid
+        mid_z = self.size // 2
+        
+        grid_coordinates_x = (self.size - len(spaceship_60P5H2V0_coordinates)) // 2
+        grid_coordinates_y = (self.size - len(spaceship_60P5H2V0_coordinates[0])) // 2
+
+        # insert the spaceship at a specific point in the 2D slice of a 3D grid
         for i, row in enumerate(spaceship_60P5H2V0_coordinates):
             for j, cell in enumerate(row):
-                self.grid[i][j][self.size//2] = cell
+                self.grid[i + grid_coordinates_x][j + grid_coordinates_y][mid_z] = cell
 
     def create_geometry(self):
         self.cube_model = self.loader.load_model("1m_cube.gltf")
@@ -212,6 +221,9 @@ bo7bo$7bo6b2ob2o6bo!$'''
                     else:
                         self.grid[x][y][z] = 0
 
+        self.total_steps += 1
+        # base.win.save_screenshot('3d_conway_' + str(self.total_steps) + '.png')
+
         task.delay_time = self.grid_step_time
         return task.again
 
@@ -227,15 +239,18 @@ bo7bo$7bo6b2ob2o6bo!$'''
         return count
 
     def circle_camera(self, task):
-        radius = self.size * 3
-        angle = task.time * 10  # adjust the multiplier to control the speed of cam rotation
-        x = radius * math.sin(math.radians(angle))
-        y = radius * math.cos(math.radians(angle))
-        z = self.size // 2
+        if self.cam_circles <= self.max_cam_circles:
+            radius = self.size * 3
+            angle = task.time * 10  # adjust the multiplier to control the speed of cam rotation
+            x = radius * math.sin(math.radians(angle))
+            y = radius * math.cos(math.radians(angle))
+            z = self.size // 2
 
-        center = Point3(self.size // 2, self.size // 2, self.size // 2)
-        self.cam.set_pos(x, y, 15)
-        self.cam.look_at(center)
+            center = Point3(self.size // 2, self.size // 2, self.size // 2)
+            self.cam.set_pos(x, y, 15)
+            self.cam.look_at(center)
+
+            self.cam_circles += 1
 
         return task.cont
 

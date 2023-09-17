@@ -106,7 +106,7 @@ class GameOfLife3D(ShowBase):
         return binary_list
 
     def init_grid_RLE_basis(self):
-        # Start with an all-zero grid
+        # start with an all-zero grid
         for x in range(self.size):
             for y in range(self.size):
                 for z in range(self.size):
@@ -120,10 +120,16 @@ ob2o19b2obo9$12bo7bo$10b2ob2o3b2ob2o$13b2o3b2o$15bobo$8bo4bobobobo4bo$
 bo7bo$7bo6b2ob2o6bo!$'''
         spaceship_60P5H2V0_coordinates = self.rle_to_bin_list(rle_string)
 
-        # Insert the spaceship at a specific point in the 2D slice of a 3D grid
+        # calculate middle of the grid
+        mid_z = self.size // 2
+        
+        grid_coordinates_x = (self.size - len(spaceship_60P5H2V0_coordinates)) // 2
+        grid_coordinates_y = (self.size - len(spaceship_60P5H2V0_coordinates[0])) // 2
+
+        # insert the spaceship at a specific point in the 2D slice of a 3D grid
         for i, row in enumerate(spaceship_60P5H2V0_coordinates):
             for j, cell in enumerate(row):
-                self.grid[i][j][self.size//2] = cell
+                self.grid[i + grid_coordinates_x][j + grid_coordinates_y][mid_z] = cell
     
     def create_geometry(self):
         for x in range(self.size):
@@ -135,6 +141,7 @@ bo7bo$7bo6b2ob2o6bo!$'''
                     cube.set_pos(Point3(x, y, z))
                     cube.set_name(f"Cube-{x}-{y}-{z}")
                     cube.reparent_to(self.render)
+                    
                     if not self.grid[x][y][z]:
                         cube.hide()
 
@@ -161,6 +168,7 @@ bo7bo$7bo6b2ob2o6bo!$'''
                             cube.show()
                         else:
                             cube.hide()
+
             time.sleep(self.grid_step_time)
             self.new_grid = new_grid
 
@@ -169,6 +177,7 @@ bo7bo$7bo6b2ob2o6bo!$'''
             self.grid = self.new_grid
 
         task.delay_time = self.grid_step_time*2  # set the update to double the grid calculation time
+
         return task.again
 
     def count_neighbors(self, x, y, z):
@@ -180,6 +189,7 @@ bo7bo$7bo6b2ob2o6bo!$'''
                         continue
                     nx, ny, nz = (x + dx) % self.size, (y + dy) % self.size, (z + dz) % self.size
                     count += self.grid[nx][ny][nz]
+
         return count
 
     def circle_camera(self, task):
